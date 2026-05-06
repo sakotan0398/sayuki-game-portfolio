@@ -1,0 +1,477 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<%@ page import="userMS.model.beans.UsersBeans"%>
+<%
+UsersBeans user = (UsersBeans) session.getAttribute("loginUser");
+if (user == null) {
+	response.sendRedirect("UsersLoginServlet");
+	return;
+}
+%>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>SAYUKI SAKOTA - Official Portal</title>
+<style>
+/* --- 1. 全体設定 --- */
+html {
+	scroll-behavior: smooth;
+}
+
+body {
+	margin: 0;
+	padding: 0;
+	font-family: 'Helvetica Neue', 'Hiragino Kaku Gothic ProN', Arial,
+		sans-serif;
+	background: #111;
+	color: #fff;
+	overflow-x: hidden;
+}
+
+/* --- 2. 上部固定ナビ --- */
+.top-nav {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 70px;
+	background: rgba(0, 0, 0, 0.6);
+	backdrop-filter: blur(10px);
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 0 40px;
+	box-sizing: border-box;
+	z-index: 1000;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nav-brand {
+	font-size: 1.5em;
+	font-weight: bold;
+	color: #ff69b4;
+	letter-spacing: 2px;
+}
+
+.nav-links {
+	display: flex;
+	gap: 30px;
+}
+
+.nav-links a {
+	text-decoration: none;
+	color: #eee;
+	font-weight: bold;
+	transition: 0.3s;
+}
+
+.nav-links a:hover {
+	color: #ff69b4;
+}
+
+.nav-right-cluster {
+	display: flex;
+	align-items: center;
+	gap: 20px;
+}
+
+.user-info {
+	font-size: 0.85em;
+	color: #aaa;
+	white-space: nowrap;
+}
+
+.logout-link {
+	color: #ff4d4d;
+	text-decoration: none;
+	font-weight: bold;
+	margin-left: 5px;
+}
+
+/* --- 3. ハンバーガーボタンのデザイン（復活！） --- */
+.hamburger {
+	width: 30px;
+	height: 24px;
+	cursor: pointer;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	position: relative;
+	z-index: 2000;
+}
+
+.hamburger span {
+	display: block;
+	width: 100%;
+	height: 3px;
+	background-color: #ff69b4;
+	border-radius: 2px;
+	transition: all 0.4s;
+}
+/* 「×」への変身アニメーション */
+.active-btn span:nth-child(1) {
+	transform: translateY(10.5px) rotate(45deg);
+}
+
+.active-btn span:nth-child(2) {
+	opacity: 0;
+}
+
+.active-btn span:nth-child(3) {
+	transform: translateY(-10.5px) rotate(-45deg);
+}
+
+/* --- 4. 隠しメニュー画面 --- */
+.full-menu {
+	position: fixed;
+	top: 0;
+	right: -100%;
+	width: 300px;
+	height: 100vh;
+	background: rgba(0, 0, 0, 0.95);
+	z-index: 1500;
+	transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+	padding-top: 100px;
+}
+
+.full-menu.active {
+	right: 0;
+}
+
+.full-menu ul {
+	list-style: none;
+	padding: 0;
+	text-align: center;
+}
+
+.full-menu ul li {
+	margin-bottom: 30px;
+	opacity: 0;
+	transform: translateY(20px);
+	transition: 0.5s;
+}
+
+.full-menu.active ul li {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+.full-menu.active ul li:nth-child(1) {
+	transition-delay: 0.2s;
+}
+
+.full-menu.active ul li:nth-child(2) {
+	transition-delay: 0.3s;
+}
+
+.full-menu.active ul li:nth-child(3) {
+	transition-delay: 0.4s;
+}
+
+.full-menu.active ul li:nth-child(4) {
+	transition-delay: 0.5s;
+}
+
+.full-menu.active ul li:nth-child(5) {
+	transition-delay: 0.6s;
+}
+
+.full-menu ul li a {
+	color: white;
+	text-decoration: none;
+	font-size: 1.5em;
+	transition: 0.3s;
+}
+
+.full-menu ul li a:hover {
+	color: #ff69b4;
+}
+
+/* --- 5. 各セクション設定 --- */
+section {
+	width: 100%;
+	min-height: 100vh;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	padding: 80px 20px;
+	box-sizing: border-box;
+}
+
+#top {
+	background: linear-gradient(135deg, #1a1a2e, #16213e);
+}
+
+#game {
+	background: linear-gradient(135deg, #2b1055, #7597de);
+}
+
+#prof {
+	background: linear-gradient(135deg, #2c3e50, #3498db);
+}
+
+#art {
+	background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+}
+
+#item {
+	background: linear-gradient(135deg, #141e30, #243b55);
+}
+
+.glass-panel {
+	background: rgba(255, 255, 255, 0.1);
+	backdrop-filter: blur(15px);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	padding: 50px;
+	border-radius: 20px;
+	text-align: center;
+	max-width: 800px;
+	width: 90%;
+}
+
+/* --- 6. ボタンのデザイン --- */
+.btn-container {
+	margin-top: 30px;
+	display: flex;
+	justify-content: center;
+	gap: 20px;
+	flex-wrap: wrap;
+}
+
+.action-btn {
+	display: inline-block;
+	padding: 15px 30px;
+	background: #ff69b4;
+	color: #fff;
+	text-decoration: none;
+	font-size: 1.1em;
+	font-weight: bold;
+	border-radius: 30px;
+	transition: 0.3s;
+	border: none;
+	cursor: pointer;
+}
+
+.action-btn:hover {
+	background: #ff1493;
+	transform: translateY(-3px);
+	box-shadow: 0 5px 15px rgba(255, 105, 180, 0.4);
+}
+
+.btn-continue {
+	background: #4169e1;
+}
+
+.btn-continue:hover {
+	background: #1e90ff;
+	box-shadow: 0 5px 15px rgba(65, 105, 225, 0.4);
+}
+
+.btn-danger {
+	background: #dc143c;
+}
+
+.btn-danger:hover {
+	background: #ff0000;
+	box-shadow: 0 5px 15px rgba(220, 20, 60, 0.4);
+}
+
+/* --- 🌟 ロード画面のスタイル --- */
+#loader-wrapper {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: #05050a; /* 真っ黒より少し青みのある黒 */
+	display: none; /* 最初は隠しておく */
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	z-index: 9999; /* 一番手前に表示 */
+}
+
+/* くるくる回るアニメーション */
+.atelier-loader {
+	width: 60px;
+	height: 60px;
+	border: 5px solid rgba(255, 105, 180, 0.2);
+	border-top: 5px solid #ff69b4;
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
+	margin-bottom: 20px;
+}
+
+.loader-text {
+	color: #ff69b4;
+	font-weight: bold;
+	letter-spacing: 4px;
+	font-size: 1.2em;
+	text-shadow: 0 0 10px rgba(255, 105, 180, 0.5);
+	animation: pulse 1.5s infinite;
+}
+
+@
+keyframes spin { 0% {
+	transform: rotate(0deg);
+}
+
+100
+%
+{
+transform
+:
+rotate(
+360deg
+);
+}
+}
+@
+keyframes pulse { 0%, 100% {
+	opacity: 1;
+}
+50
+%
+{
+opacity
+:
+0.4;
+}
+}
+</style>
+</head>
+<body>
+	<div id="loader-wrapper">
+		<div class="atelier-loader"></div>
+		<div class="loader-text">ACCESSING ATELIER...</div>
+	</div>
+
+	<nav class="full-menu" id="full-menu">
+		<ul>
+			<li><a href="MainServlet">Portal Top</a></li>
+			<li><a href="#game">Atelier Game</a></li>
+			<li><a href="ProfServlet">Official Profile</a></li>
+			<li><a href="ArtServlet">Illustration Gallery</a></li>
+			<li><a href="ItemServlet">Technical Tools</a></li>
+		</ul>
+	</nav>
+
+	<nav class="top-nav">
+		<div class="nav-brand">SAYUKI PORTAL</div>
+		<div class="nav-links">
+			<a href="#top">HOME</a> <a href="#game">GAME</a> <a href="#prof">PROFILE</a>
+			<a href="#art">GALLERY</a> <a href="#item">TOOLS</a>
+		</div>
+		<div class="nav-right-cluster">
+			<div class="user-info">
+				Welcome,
+				<%=user.getHn()%>
+				| <a href="UsersLoginServlet" class="logout-link">Logout</a>
+			</div>
+			<div class="hamburger" id="ham-btn">
+				<span></span> <span></span> <span></span>
+			</div>
+		</div>
+	</nav>
+
+	<section id="top">
+		<div class="glass-panel">
+			<h2>Welcome to the Atelier</h2>
+			<p>
+				ここは、迫田サユキの全てが交差する場所。<br>下へスクロールして、彼女の様々な顔を覗いてみてください。
+			</p>
+		</div>
+	</section>
+
+	<section id="game">
+		<div class="glass-panel">
+			<h2>サユキのアトリエ</h2>
+			<p>
+				彼女との1年間の物語。<br>あなたの選択が、彼女の未来を形作ります。
+			</p>
+
+			<div class="btn-container">
+				<%
+				Boolean hasSave = (Boolean) request.getAttribute("hasSaveData");
+				if (hasSave == null)
+					hasSave = false;
+
+				if ("guest".equals(user.getId())) {
+				%>
+				<p style="color: #ff4d4d; font-weight: bold; width: 100%;">⚠️
+					ゲストモードではセーブ機能は利用できません</p>
+				<a href="SayukiGameServlet?mode=new" class="action-btn">最初からプレイ（セーブ不可）</a>
+
+				<%
+				} else {
+				%>
+				<%
+				if (hasSave) {
+				%>
+				<a href="SayukiGameServlet?mode=continue"
+					class="action-btn btn-continue">続きから</a> <a
+					href="SayukiGameServlet?mode=new" class="action-btn btn-danger"
+					onclick="return confirm('現在のセーブデータは消去されます。本当に最初からやり直しますか？');">
+					最初から（上書き） </a>
+				<%
+				} else {
+				%>
+				<a href="SayukiGameServlet?mode=new" class="action-btn">最初から</a>
+				<%
+				}
+				%>
+				<%
+				}
+				%>
+			</div>
+		</div>
+	</section>
+
+	<section id="prof">
+		<div class="glass-panel">
+			<h2>Who is Sayuki?</h2>
+			<p>
+				彼女のパーソナルデータと、秘められた想い。<br>ゲームで親愛度が高まることで解禁される秘密の記録を閲覧できます。
+			</p>
+			<a href="ProfServlet" class="action-btn">プロフィールを閲覧</a>
+		</div>
+	</section>
+
+	<section id="art">
+		<div class="glass-panel">
+			<h2>Illustration Gallery</h2>
+			<p>
+				彼女が描いた作品群のアーカイブ。<br>ゲームの進行に合わせて、新たな1枚がアンロックされます。
+			</p>
+			<a href="ArtServlet" class="action-btn">ギャラリーに入る</a>
+		</div>
+	</section>
+
+	<section id="item">
+		<div class="glass-panel">
+			<h2>Technical Tools</h2>
+			<p>
+				日々の作業を効率化するためにサユキが構築した<br>Pythonスクリプトやツール群を無償で提供しています。
+			</p>
+			<a href="ItemServlet" class="action-btn">ツールをダウンロード</a>
+		</div>
+	</section>
+
+	<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const hamBtn = document.getElementById('ham-btn');
+            const fullMenu = document.getElementById('full-menu');
+
+            if (hamBtn && fullMenu) {
+                hamBtn.addEventListener('click', () => {
+                    hamBtn.classList.toggle('active-btn');
+                    fullMenu.classList.toggle('active');
+                });
+            }
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,97 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>SAYUKI ATELIER - ENDING</title>
+    <style>
+        body { 
+            margin: 0; padding: 0; height: 100vh;
+            background-color: #05050a; color: white;
+            font-family: 'Hiragino Kaku Gothic ProN', sans-serif;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden;
+        }
+
+        /* 🌟 動的な背景グラデーション */
+        .bg-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; transition: 3s ease;
+        }
+
+        /* エンディングごとの色設定 */
+        body[data-ed="True"] .bg-overlay { background: radial-gradient(circle, #2c2200 0%, #05050a 100%); }
+        body[data-ed="Love"] .bg-overlay { background: radial-gradient(circle, #2b0c1c 0%, #05050a 100%); }
+        body[data-ed="Like"] .bg-overlay { background: radial-gradient(circle, #0c152b 0%, #05050a 100%); }
+        body[data-ed="Bad"] .bg-overlay { background: #0a0a0a; }
+
+        .container {
+            text-align: center; max-width: 800px; padding: 60px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px); border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: slideUp 2s ease-out forwards;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .ed-label { font-size: 0.9em; letter-spacing: 5px; color: #aaa; margin-bottom: 10px; }
+        
+        .ed-title { 
+            font-size: 3.5em; font-weight: bold; margin-bottom: 30px;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+
+        /* ルートごとのタイトルの色 */
+        [data-ed="True"] .ed-title { color: #ffd700; text-shadow: 0 0 30px #ffd700; }
+        [data-ed="Love"] .ed-title { color: #ff69b4; text-shadow: 0 0 30px #ff69b4; }
+        [data-ed="Like"] .ed-title { color: #4169e1; text-shadow: 0 0 30px #4169e1; }
+
+        .stats-area {
+            display: flex; justify-content: center; gap: 40px;
+            margin: 40px 0; font-size: 1.2em;
+        }
+
+        .btn-home {
+            padding: 15px 50px; background: rgba(255, 255, 255, 0.1);
+            color: white; text-decoration: none; border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50px; transition: 0.4s; letter-spacing: 2px;
+        }
+        .btn-home:hover { background: white; color: black; transform: scale(1.05); }
+    </style>
+</head>
+<body data-ed="${endingType}">
+
+    <div class="bg-overlay"></div>
+
+    <div class="container">
+        <div class="ed-label">EPILOGUE COMPLETED</div>
+        <div class="ed-title">
+            <c:choose>
+                <c:when test="${endingType == 'True'}">TRUE ENDING</c:when>
+                <c:when test="${endingType == 'Love'}">LOVE ENDING</c:when>
+                <c:when test="${endingType == 'Like'}">LIKE ENDING</c:when>
+                <c:otherwise>NORMAL ENDING</c:otherwise>
+            </c:choose>
+        </div>
+
+        <p style="color: #ccc; line-height: 1.8;">
+            サユキと共に過ごした1年間。<br>
+            迷い、悩み、そして共に創り上げた作品は、<br>
+            二人の運命を大きく変えることになった。
+        </p>
+
+        <div class="stats-area">
+            <div>LOVE: <span style="color:#ff69b4">${sayukiData.lovePoint}</span></div>
+            <div>LIKE: <span style="color:#4169e1">${sayukiData.likePoint}</span></div>
+        </div>
+
+        <br><br>
+        <a href="MainServlet" class="btn-home">アトリエの入口に戻る</a>
+    </div>
+
+</body>
+</html>

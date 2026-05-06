@@ -1,0 +1,568 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="userMS.model.beans.UsersBeans"%>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>SAYUKI ATELIER - IN GAME</title>
+<style>
+/* --- 全体設定 --- */
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #05050a;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+    font-family: 'Helvetica Neue', 'Hiragino Kaku Gothic ProN', sans-serif;
+    color: #fff;
+}
+
+/* ========================================= */
+/* 🌟 ゲーム画面全体を包むフレーム（外枠） */
+/* ========================================= */
+.game-viewport {
+    position: relative;
+    width: 95vw;
+    height: 95vh;
+    max-width: 1600px;
+    max-height: 900px;
+    overflow: hidden;
+    border: 4px solid rgba(255, 105, 180, 0.4);
+    border-radius: 20px;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(255, 255, 255, 0.1);
+    background-size: cover;
+    background-position: center;
+    transition: background-image 1.0s ease-in-out;
+}
+
+.screen-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(20, 20, 40, 0.2);
+    pointer-events: none;
+    z-index: 5;
+}
+
+/* --- UI関連 --- */
+.status-container {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 20px;
+    z-index: 1000;
+    background: rgba(10, 10, 20, 0.8);
+    backdrop-filter: blur(15px);
+    padding: 10px 40px;
+    border-radius: 50px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.stat-item {
+    text-align: center;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    padding-right: 20px;
+}
+
+.stat-item:last-child {
+    border-right: none;
+    padding-right: 0;
+}
+
+.stat-label { font-size: 0.65em; color: #aaa; display: block; }
+.stat-value { font-weight: bold; color: #ff69b4; font-size: 1.1em; }
+
+.save-box { position: absolute; top: 25px; right: 25px; z-index: 2000; }
+
+.btn-save {
+    background: rgba(10, 10, 20, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #aaa;
+    padding: 8px 20px;
+    border-radius: 8px;
+    transition: 0.3s;
+    font-size: 0.85em;
+    text-decoration: none;
+    backdrop-filter: blur(5px);
+}
+.btn-save:hover { background: #6c757d; color: white; }
+
+/* --- 🌟 キャラクター表示と演出アニメーション --- */
+.character-stage {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    z-index: 2;
+}
+
+.character-img {
+    height: 120vh; 
+    width: auto;
+    object-fit: contain;
+    margin-top: 15vh; 
+    filter: brightness(0.9) contrast(1.05) sepia(0.1) drop-shadow(0 0 30px rgba(255, 105, 180, 0.3));
+    transition: all 0.8s ease; /* 💡 すべての変化（ズームやフェード）を滑らかにする */
+}
+
+/* 画像がない時は隠す */
+img[src$="images/character/"] { display: none; }
+
+/* 💡 カメラ演出（ズーム） */
+.zoom-normal { transform: scale(1) translateY(0); }
+.zoom-close_up { transform: scale(1.3) translateY(50px); }
+
+/* 💡 登場エフェクト */
+.effect-none { opacity: 1; }
+.effect-slide_up { animation: slideUp 0.6s ease-out forwards; }
+.effect-cross_fade { animation: fadeIn 0.8s ease-in-out forwards; }
+.effect-side_peek { animation: sidePeek 0.6s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards; }
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+    from { opacity: 0; } 
+    to { opacity: 1; }
+}
+@keyframes sidePeek {
+    from { transform: translateX(-100px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+/* --- メッセージウィンドウ --- */
+.message-window {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 85%;
+    max-width: 1000px;
+    min-height: 280px;
+    background: rgba(10, 10, 20, 0.93);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 105, 180, 0.4);
+    border-radius: 25px;
+    padding: 50px 50px 30px;
+    box-shadow: 0 -15px 40px rgba(0, 0, 0, 0.7);
+    z-index: 100;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.speaker-name {
+    position: absolute;
+    top: -18px;
+    left: 50px;
+    background: linear-gradient(90deg, #ff69b4, #ff1493);
+    color: white;
+    padding: 6px 35px;
+    border-radius: 50px;
+    font-weight: bold;
+    font-size: 0.9em;
+    box-shadow: 0 5px 15px rgba(255, 105, 180, 0.4);
+}
+
+.message-text {
+    font-size: 1.2em;
+    line-height: 1.8;
+    color: #f0f0f0;
+    min-height: 4em;
+    margin-bottom: 15px;
+}
+
+.click-wait {
+    color: #ff69b4;
+    font-size: 1.2em;
+    animation: blink 1s infinite;
+    display: inline-block;
+    margin-top: 10px;
+}
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+.message-controls {
+    position: absolute;
+    top: 15px;
+    right: 30px;
+    display: flex;
+    gap: 8px;
+    z-index: 210;
+}
+
+.ctrl-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 105, 180, 0.5);
+    color: #ff69b4;
+    font-size: 0.7em;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+.ctrl-btn:hover { background: rgba(255, 105, 180, 0.2); }
+.ctrl-btn.active { background: #ff69b4; color: white; box-shadow: 0 0 12px #ff69b4; border-color: #fff; }
+
+/* 選択肢エリア */
+.choice-area {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+    margin-top: 10px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-choice {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #ddd;
+    padding: 16px 20px;
+    border-radius: 12px;
+    cursor: pointer;
+    text-align: left;
+    transition: 0.3s;
+    font-size: 1em;
+    display: flex;
+    align-items: center;
+}
+.btn-choice:hover {
+    background: rgba(255, 105, 180, 0.15);
+    border-color: #ff69b4;
+    color: #fff;
+    transform: translateY(-3px);
+}
+
+.choice-num {
+    background: #ff69b4;
+    color: white;
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin-right: 15px;
+    font-size: 0.8em;
+    font-weight: bold;
+}
+
+.guest-warning {
+    position: absolute;
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 77, 77, 0.2);
+    border: 1px solid #ff4d4d;
+    color: #ff4d4d;
+    padding: 8px 25px;
+    border-radius: 50px;
+    font-size: 0.8em;
+    z-index: 500;
+}
+
+.footer-nav {
+    position: absolute;
+    bottom: 10px;
+    right: 20px;
+    z-index: 10;
+    font-size: 0.8em;
+    color: rgba(255,255,255,0.4);
+}
+</style>
+</head>
+<body>
+
+<div class="game-viewport" style="background-image: url('${pageContext.request.contextPath}/images/background/${not empty backgroundImage ? backgroundImage : 'bg06819201440.jpg'}');">
+    
+    <div class="screen-overlay"></div>
+
+    <div class="status-container">
+        <div class="stat-item">
+            <span class="stat-label">CALENDAR</span> <span class="stat-value">${calendarDate}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">PROGRESS</span> <span class="stat-value">${sayukiData.currentTurn} / 52</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">LOVE</span> <span class="stat-value">${sayukiData.lovePoint}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">LIKE</span> <span class="stat-value">${sayukiData.likePoint}</span>
+        </div>
+    </div>
+
+    <%
+    UsersBeans loginUser = (UsersBeans) session.getAttribute("loginUser");
+    if (loginUser != null && "guest".equals(loginUser.getId())) {
+    %>
+    <div class="guest-warning">⚠️ ゲストモード：進行状況は保存されません</div>
+    <%
+    }
+    %>
+
+    <div class="save-box">
+        <% if (loginUser != null && !"guest".equals(loginUser.getId())) { %>
+        <form action="SaveGameServlet" method="post" style="display: inline;">
+            <button type="submit" class="btn-save">💾 SAVE & EXIT</button>
+        </form>
+        <% } else { %>
+        <a href="MainServlet" class="btn-save">🚪 EXIT</a>
+        <% } %>
+    </div>
+
+    <div class="character-stage">
+        <img src="images/character/${not empty characterImage ? characterImage : 'sayuki_normal.png'}"
+            class="character-img effect-${not empty effectType ? effectType : 'none'} zoom-${not empty zoomType ? zoomType : 'normal'}" 
+            id="sayuki-img" alt="サユキ">
+    </div>
+
+    <div class="message-window" onclick="handleWindowClick()">
+        <div class="speaker-name">SAYUKI</div>
+        <div id="speaker-badge" class="speaker-name">SAYUKI</div>
+        <p id="typewriter" class="message-text">${message}</p>
+
+        <div class="message-controls">
+            <button type="button" id="btn-auto" onclick="event.stopPropagation(); toggleAuto();" class="ctrl-btn">AUTO</button>
+            <button type="button" id="btn-ff" onclick="event.stopPropagation(); toggleFF();" class="ctrl-btn">FF</button>
+            <button type="button" id="btn-skip" onclick="event.stopPropagation(); toggleSkip();" class="ctrl-btn">SKIP</button>
+        </div>
+
+        <form action="SayukiGameServlet" method="post" class="choice-area" id="choice-area" style="display: none;">
+            <button type="submit" name="choice" value="1" class="btn-choice">
+                <span class="choice-num">1</span> ${choice1Text}
+            </button>
+            <button type="submit" name="choice" value="2" class="btn-choice">
+                <span class="choice-num">2</span> ${choice2Text}
+            </button>
+            <button type="submit" name="choice" value="3" class="btn-choice">
+                <span class="choice-num">3</span> ${choice3Text}
+            </button>
+        </form>
+    </div>
+
+    <div class="footer-nav">OPERATOR: ${playerData.name}</div>
+</div> 
+
+<script>
+// --- グローバル変数 ---
+let textQueue = [];     
+let queueIndex = 0;     
+let currentText = "";   
+let charIndex = 0;      
+let isTyping = false;   
+let typingTimer = null; 
+
+const S_NORMAL = 40;
+const S_FF = 10;
+const S_SKIP = 0;
+
+let isAuto = localStorage.getItem('sayuki_auto') === 'true';
+let isFF   = localStorage.getItem('sayuki_ff')   === 'true';
+let isSkip = localStorage.getItem('sayuki_skip') === 'true';
+
+document.addEventListener('DOMContentLoaded', () => {
+    const textElement = document.getElementById('typewriter');
+    if (!textElement) return;
+
+    const rawText = textElement.innerHTML.trim(); 
+    textQueue = rawText.split('[NEXT]');
+    textElement.innerHTML = "";             
+    
+    updateUI('btn-auto', isAuto);
+    updateUI('btn-ff', isFF);
+    updateUI('btn-skip', isSkip);
+
+    startTyping(); 
+});
+
+function startTyping() {
+    isTyping = true;
+    charIndex = 0;
+    currentText = textQueue[queueIndex]; 
+    document.getElementById('typewriter').innerHTML = ""; 
+    typeNextChar();
+}
+
+function typeNextChar() {
+    const element = document.getElementById('typewriter');
+    if (!element) return;
+    
+    if (isSkip) {
+        let cleanText = currentText.substring(charIndex).replace(/\[NAME:.*?\]/g, '').replace(/\[IMG:.*?\]/g, '');
+        element.innerHTML += cleanText;
+        
+        let lastTagMatch = [...currentText.matchAll(/\[NAME:(.*?)\]/g)].pop();
+        if (lastTagMatch) updateSpeakerBadge(lastTagMatch[1]);
+
+        let lastImgMatch = [...currentText.matchAll(/\[IMG:(.*?)\]/g)].pop();
+        if (lastImgMatch) updateCharacterImage(lastImgMatch[1]);
+        
+        finishTyping();
+        return;
+    }
+
+    if (charIndex < currentText.length) {
+        if (currentText.substring(charIndex, charIndex + 4) === '<br>') {
+            element.innerHTML += '<br>';
+            charIndex += 4;
+            typingTimer = setTimeout(typeNextChar, isFF ? S_FF : S_NORMAL);
+            return;
+        }
+        
+        if (currentText.substring(charIndex, charIndex + 6) === '[NAME:') {
+            let endIndex = currentText.indexOf(']', charIndex);
+            if (endIndex !== -1) {
+                let speakerName = currentText.substring(charIndex + 6, endIndex);
+                updateSpeakerBadge(speakerName);
+                charIndex = endIndex + 1; 
+                typeNextChar();
+                return;
+            }
+        }
+
+        if (currentText.substring(charIndex, charIndex + 5) === '[IMG:') {
+            let endIndex = currentText.indexOf(']', charIndex);
+            if (endIndex !== -1) {
+                let imgName = currentText.substring(charIndex + 5, endIndex);
+                updateCharacterImage(imgName); 
+                charIndex = endIndex + 1; 
+                typeNextChar(); 
+                return;
+            }
+        }
+
+        element.innerHTML += currentText.charAt(charIndex);
+        charIndex++;
+        typingTimer = setTimeout(typeNextChar, isFF ? S_FF : S_NORMAL);
+    } else {
+        finishTyping();
+    }
+}
+
+function updateCharacterImage(imgName) {
+    let imgElement = document.getElementById('sayuki-img');
+    if (!imgElement) return;
+
+    if (imgName === "NONE" || imgName === "") {
+        imgElement.style.display = 'none';
+    } else {
+        imgElement.style.display = 'block';
+        imgElement.src = 'images/character/' + imgName;
+        // JavaScriptからタグで切り替えるときは、フェードインさせる
+        imgElement.style.animation = 'none';
+        imgElement.offsetHeight; 
+        imgElement.style.animation = 'fadeIn 0.6s ease forwards';
+    }
+}
+
+function handleWindowClick() {
+    if (isTyping) {
+        clearTimeout(typingTimer);
+        
+        let cleanText = currentText.substring(charIndex).replace(/\[NAME:.*?\]/g, '').replace(/\[IMG:.*?\]/g, '');
+        document.getElementById('typewriter').innerHTML += cleanText;
+        
+        let allTags = [...currentText.matchAll(/\[NAME:(.*?)\]/g)];
+        if (allTags.length > 0) updateSpeakerBadge(allTags[allTags.length - 1][1]);
+
+        let allImgs = [...currentText.matchAll(/\[IMG:(.*?)\]/g)];
+        if (allImgs.length > 0) updateCharacterImage(allImgs[allImgs.length - 1][1]);
+        
+        finishTyping();
+    } else {
+        if (queueIndex < textQueue.length - 1) {
+            queueIndex++;
+            startTyping();
+        }
+    }
+}
+
+function updateSpeakerBadge(name) {
+    const badge = document.getElementById('speaker-badge');
+    if (!badge) return;
+
+    if (name === 'NONE') {
+        badge.style.opacity = '0';
+        setTimeout(() => { badge.style.display = 'none'; }, 300);
+    } else {
+        badge.style.display = 'block';
+        badge.style.opacity = '1';
+        badge.innerHTML = name;
+        
+        if (name === 'SAYUKI' || name === 'サユキ') {
+            badge.style.background = 'linear-gradient(90deg, #ff69b4, #ff1493)'; 
+        } else {
+            badge.style.background = 'linear-gradient(90deg, #4169e1, #1e90ff)'; 
+        }
+    }
+}
+
+function finishTyping() {
+    isTyping = false;
+    clearTimeout(typingTimer);
+    
+    const element = document.getElementById('typewriter');
+    
+    if (queueIndex < textQueue.length - 1) {
+        element.innerHTML += "<span class='click-wait'>▼</span>";
+        if (isAuto || isSkip) {
+            let waitTime = isSkip ? 200 : 1500;
+            setTimeout(() => { handleWindowClick(); }, waitTime);
+        }
+    } else {
+        const choiceArea = document.getElementById('choice-area');
+        choiceArea.style.display = 'grid';
+        choiceArea.animate([{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 400, fill: 'forwards' });
+    }
+}
+
+function toggleAuto() {
+    isAuto = !isAuto; 
+    localStorage.setItem('sayuki_auto', isAuto); 
+    updateUI('btn-auto', isAuto);
+    if (isAuto && !isTyping && queueIndex < textQueue.length - 1) handleWindowClick();
+}
+
+function toggleFF() {
+    isFF = !isFF;
+    if (isFF) { isSkip = false; localStorage.setItem('sayuki_skip', false); }
+    localStorage.setItem('sayuki_ff', isFF); 
+    updateUI('btn-ff', isFF); updateUI('btn-skip', isSkip);
+}
+
+function toggleSkip() {
+    isSkip = !isSkip;
+    if (isSkip) { isFF = false; localStorage.setItem('sayuki_ff', false); }
+    localStorage.setItem('sayuki_skip', isSkip); 
+    updateUI('btn-skip', isSkip); updateUI('btn-ff', isFF);
+    
+    if (isSkip && isTyping) {
+        clearTimeout(typingTimer); typeNextChar();
+    } else if (isSkip && !isTyping && queueIndex < textQueue.length - 1) {
+        handleWindowClick();
+    }
+}
+
+function updateUI(id, state) {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    if (state) btn.classList.add('active'); else btn.classList.remove('active');
+}
+</script>
+</body>
+</html>
