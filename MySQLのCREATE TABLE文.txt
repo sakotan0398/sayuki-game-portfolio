@@ -1,0 +1,31 @@
+// MySQLのCREATE TABLE文
+// ログイン用
+CREATE TABLE users (
+    id VARCHAR(50) PRIMARY KEY COMMENT 'ユーザーID',
+    hn VARCHAR(100) NOT NULL COMMENT 'ハンドルネーム',
+    pass VARCHAR(255) NOT NULL COMMENT 'パスワード',
+    birthday DATE COMMENT '誕生日',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '登録日時'
+);
+
+// ゲームデータ保存用
+CREATE TABLE sayuki_save_data (
+    USER_ID VARCHAR(50) PRIMARY KEY COMMENT 'ユーザーID',
+    CURRENT_TURN INT DEFAULT 0 COMMENT '現在のターン数',
+    LOVE_POINT INT DEFAULT 0 COMMENT 'Loveポイント',
+    LIKE_POINT INT DEFAULT 0 COMMENT 'Likeポイント',
+    EVENT_SCORE INT DEFAULT 0 COMMENT 'イベントスコア',
+    CURRENT_PHASE INT DEFAULT 0 COMMENT '現在のフェーズ',
+    LAST_SCENARIO_ID INT DEFAULT 0 COMMENT '最後に読んだシナリオID',
+    FOREIGN KEY (USER_ID) REFERENCES users(id) ON DELETE CASCADE
+);
+
+// ルートクリア保存用
+CREATE TABLE clear_history (
+    id VARCHAR(50) PRIMARY KEY COMMENT 'ユーザーID',
+    true_cleared INT DEFAULT 0 COMMENT 'Trueエンドクリアフラグ(0:未, 1:済)',
+    love_cleared INT DEFAULT 0 COMMENT 'Loveエンドクリアフラグ(0:未, 1:済)',
+    like_cleared INT DEFAULT 0 COMMENT 'Likeエンドクリアフラグ(0:未, 1:済)',
+    bad_cleared INT DEFAULT 0 COMMENT 'Badエンドクリアフラグ(0:未, 1:済)',
+    FOREIGN KEY (id) REFERENCES users(id) ON DELETE CASCADE
+);
