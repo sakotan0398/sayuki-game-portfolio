@@ -54,5 +54,4 @@
 - **Backend:** Java 25, Jakarta Servlet, JSP
 - **Frontend:** HTML, CSS (ガラスモーフィズム等のUI実装), JavaScript
 - **Database:** MySQL 8.0 / JDBC
-- **Environment:** Eclipse, Apache Tomcat 10
-  
+- **Environment:** Eclipse, Apache Tomcat 11
